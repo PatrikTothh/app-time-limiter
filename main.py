@@ -1,5 +1,6 @@
 import tkinter as tk
 
+from config import LIMIT_SECONDS
 from state_manager import StateManager
 from game_manager import GameManager
 from notification_manager import NotificationManager
@@ -22,7 +23,7 @@ def main():
     )
 
     print("Game Time Limiter is running.")
-    print("Shared daily limit: 90 minutes.")
+    print(f"Shared daily limit: {LIMIT_SECONDS // 60} minutes.")
     print("Games monitored: CS2 and Rocket League.")
 
     root.after(1000, limiter.check_games)
