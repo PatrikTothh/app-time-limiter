@@ -29,25 +29,7 @@ class ConfigManager:
     def load_settings(self):
         APP_DIR.mkdir(parents=True, exist_ok=True)
 
-        try:
-            with SETTINGS_FILE.open("r", encoding="utf-8") as file:
-                saved = json.load(file)
-
-            settings = DEFAULT_SETTINGS.copy()
-            settings.update({
-                key: saved[key]
-                for key in DEFAULT_SETTINGS
-                if key in saved
-            })
-
-            settings["games"] = DEFAULT_SETTINGS["games"].copy()
-            if isinstance(saved.get("games"), dict):
-                settings["games"].update(saved["games"])
-
-            self._validate(settings)
-            return settings
-
-        except FileNotFoundError:
+        if not SETTINGS_FILE.exists():
             self._save_defaults()
             return {
                 **DEFAULT_SETTINGS,
@@ -55,7 +37,40 @@ class ConfigManager:
                 "games": DEFAULT_SETTINGS["games"].copy(),
             }
 
-        except (json.JSONDecodeError, TypeError, ValueError, KeyError):
+        try:
+            with SETTINGS_FILE.open("r", encoding="utf-8") as file:
+                saved = json.load(file)
+
+            settings = {
+                "daily_limit_minutes": saved.get(
+                    "daily_limit_minutes",
+                    DEFAULT_SETTINGS["daily_limit_minutes"],
+                ),
+                "check_interval_seconds": saved.get(
+                    "check_interval_seconds",
+                    DEFAULT_SETTINGS["check_interval_seconds"],
+                ),
+                "warning_minutes": saved.get(
+                    "warning_minutes",
+                    DEFAULT_SETTINGS["warning_minutes"].copy(),
+                ),
+                "games": saved.get(
+                    "games",
+                    DEFAULT_SETTINGS["games"].copy(),
+                ),
+            }
+
+            self._validate(settings)
+            return settings
+
+        except (
+            OSError,
+            json.JSONDecodeError,
+            TypeError,
+            ValueError,
+            KeyError,
+        ):
+            # If the configuration is invalid, restore defaults.
             self._save_defaults()
             return {
                 **DEFAULT_SETTINGS,
@@ -69,11 +84,8 @@ class ConfigManager:
             **new_settings,
         }
 
-        settings["games"] = {
-            **self.settings["games"],
-            **new_settings.get("games", {}),
-        }
-
+        # Replace the application list completely when supplied.
+        # This allows applications to be removed.
         self._validate(settings)
 
         APP_DIR.mkdir(parents=True, exist_ok=True)
@@ -89,15 +101,23 @@ class ConfigManager:
         warnings = settings["warning_minutes"]
         games = settings["games"]
 
-        if not isinstance(limit, int) or isinstance(limit, bool) or limit < 1:
-            raise ValueError("Daily limit must be a positive whole number.")
+        if (
+            not isinstance(limit, int)
+            or isinstance(limit, bool)
+            or limit < 1
+        ):
+            raise ValueError(
+                "Daily limit must be a positive whole number."
+            )
 
         if (
             not isinstance(interval, int)
             or isinstance(interval, bool)
             or not 1 <= interval <= 60
         ):
-            raise ValueError("Check interval must be between 1 and 60 seconds.")
+            raise ValueError(
+                "Check interval must be between 1 and 60 seconds."
+            )
 
         if (
             not isinstance(warnings, list)
@@ -111,19 +131,32 @@ class ConfigManager:
             or len(warnings) != len(set(warnings))
         ):
             raise ValueError(
-                "Warnings must be unique positive whole minutes, "
+                "Warnings must be unique positive whole minutes "
                 "smaller than the daily limit."
             )
 
         if not isinstance(games, dict):
-            raise ValueError("Game settings are invalid.")
+            raise ValueError("The limited applications list is invalid.")
 
-        for name in DEFAULT_SETTINGS["games"]:
-            executable = games.get(name)
-            if not isinstance(executable, str) or not executable.strip():
-                raise ValueError(f"Executable name for {name} cannot be empty.")
+        for name, executable in games.items():
+            if (
+                not isinstance(name, str)
+                or not name.strip()
+                or not isinstance(executable, str)
+                or not executable.strip()
+            ):
+                raise ValueError(
+                    "Each application needs a name and executable filename."
+                )
+
+            if "/" in executable or "\\" in executable:
+                raise ValueError(
+                    f"Enter only the executable filename for {name}, "
+                    "for example game.exe, not a full path."
+                )
 
     def _save_defaults(self):
         APP_DIR.mkdir(parents=True, exist_ok=True)
+
         with SETTINGS_FILE.open("w", encoding="utf-8") as file:
             json.dump(DEFAULT_SETTINGS, file, indent=4)
