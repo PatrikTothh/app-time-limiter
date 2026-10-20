@@ -10,8 +10,9 @@ from password_manager import PasswordManager
 
 
 class TrayManager:
-    def __init__(self, root):
+    def __init__(self, root, config_manager):
         self.root = root
+        self.config_manager = config_manager
         self.icon = None
         self.settings_window = None
         self.password_manager = PasswordManager()
@@ -130,8 +131,10 @@ class TrayManager:
             except tk.TclError:
                 pass
 
-        self.settings_window = SettingsWindow(self.root)
-
+        self.settings_window = SettingsWindow(
+            self.root,
+            self.config_manager,
+)
     def hide_window(self):
         """Hide the main window without stopping the application."""
         self.root.withdraw()

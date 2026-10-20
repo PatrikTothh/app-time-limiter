@@ -1,7 +1,7 @@
 
 import tkinter as tk
 
-from config import LIMIT_SECONDS
+from config import ConfigManager
 from state_manager import StateManager
 from game_manager import GameManager
 from notification_manager import NotificationManager
@@ -15,8 +15,9 @@ def main():
     root.geometry("350x220")
     root.resizable(False, False)
 
+    config_manager = ConfigManager()
     state_manager = StateManager()
-    game_manager = GameManager()
+    game_manager = GameManager(config_manager)
     notification_manager = NotificationManager(root)
 
     limiter = GameTimeLimiter(
@@ -24,9 +25,10 @@ def main():
         state_manager,
         game_manager,
         notification_manager,
+        config_manager,
     )
 
-    tray_manager = TrayManager(root)
+    tray_manager = TrayManager(root, config_manager)
 
     tk.Label(
         root,
@@ -36,7 +38,10 @@ def main():
 
     tk.Label(
         root,
-        text=f"Shared daily limit: {LIMIT_SECONDS // 60} minutes",
+        text=(
+            f"Shared daily limit: "
+            f"{config_manager.settings['daily_limit_minutes']} minutes"
+        ),
         font=("Segoe UI", 10),
     ).pack(pady=5)
 
@@ -55,19 +60,20 @@ def main():
         fg="gray",
     ).pack(pady=5)
 
-    # Closing the window hides the app instead of exiting.
     root.protocol(
         "WM_DELETE_WINDOW",
         tray_manager.hide_window,
     )
 
     print("Game Time Limiter is running.")
-    print(f"Shared daily limit: {LIMIT_SECONDS // 60} minutes.")
+    print(
+        f"Shared daily limit: "
+        f"{config_manager.settings['daily_limit_minutes']} minutes."
+    )
     print("Games monitored: CS2 and Rocket League.")
     print("Close the window to minimize to the system tray.")
     print("Use the tray menu to exit the application.")
 
-    # Start the tray icon and timer.
     tray_manager.start()
     root.after(1000, limiter.check_games)
 
