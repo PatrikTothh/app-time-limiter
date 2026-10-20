@@ -51,16 +51,27 @@ class TrayManager:
         """Open the settings window on the Tkinter thread."""
         self.root.after(0, self._open_settings)
 
+    
+    def open_settings(self, icon=None, item=None):
+        """Open Settings, reusing the existing window if possible."""
+        self.root.after(0, self._open_settings)
+
+
     def _open_settings(self):
-        if (
-            self.settings_window is not None
-            and self.settings_window.window.winfo_exists()
-        ):
-            self.settings_window.window.deiconify()
-            self.settings_window.window.lift()
-            self.settings_window.window.focus_force()
-        else:
-            self.settings_window = SettingsWindow(self.root)
+        # Reuse the existing window if it is still open.
+        if self.settings_window is not None:
+            try:
+                if self.settings_window.window.winfo_exists():
+                    self.settings_window.window.deiconify()
+                    self.settings_window.window.lift()
+                    self.settings_window.window.focus_force()
+                    return
+            except tk.TclError:
+                pass
+
+        # Create a new window only if the previous one was closed.
+        self.settings_window = SettingsWindow(self.root)
+
 
     def hide_window(self):
         self.root.withdraw()
