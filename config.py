@@ -1,8 +1,8 @@
 from pathlib import Path
 
-LIMIT_SECONDS = 90 * 60
+LIMIT_SECONDS = 100 * 60
 CHECK_INTERVAL = 60
-WARNING_MINUTES = [8, 5, 2]
+WARNING_MINUTES = [45, 30, 15,5]
 
 APP_DIR = Path.home() / "CS2TimeLimiter"
 STATE_FILE = APP_DIR / "state.json"
