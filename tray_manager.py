@@ -1,5 +1,6 @@
 
 import tkinter as tk
+from tkinter import simpledialog, messagebox
 
 import pystray
 from PIL import Image, ImageDraw
@@ -57,8 +58,9 @@ class TrayManager:
         self.root.after(0, self._open_settings)
 
 
+    
     def _open_settings(self):
-        # Reuse the existing window if it is still open.
+        # Reuse an existing Settings window if it is already open.
         if self.settings_window is not None:
             try:
                 if self.settings_window.window.winfo_exists():
@@ -69,8 +71,12 @@ class TrayManager:
             except tk.TclError:
                 pass
 
-        # Create a new window only if the previous one was closed.
+        # Ask for the password before opening Settings.
+        if not self.ask_for_password():
+            return
+
         self.settings_window = SettingsWindow(self.root)
+
 
 
     def hide_window(self):
@@ -113,3 +119,28 @@ class TrayManager:
 
         # Run the tray icon alongside Tkinter's event loop.
         self.icon.run_detached()
+    
+    def ask_for_password(self):
+        password = simpledialog.askstring(
+            "Settings password",
+            "Enter the password to access Settings:",
+            show="*",
+            parent=self.root,
+        )
+
+        if password is None:
+            return False
+
+        # Temporary password; change this before using the app.
+        correct_password = "Password123"
+
+        if password == correct_password:
+            return True
+
+        messagebox.showerror(
+            "Access denied",
+            "Incorrect password.",
+            parent=self.root,
+        )
+        return False
+
