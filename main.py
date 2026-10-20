@@ -6,7 +6,7 @@ from state_manager import StateManager
 from game_manager import GameManager
 from notification_manager import NotificationManager
 from game_time_limiter import GameTimeLimiter
-from settings_window import SettingsWindow
+from tray_manager import TrayManager
 
 
 def main():
@@ -26,7 +26,8 @@ def main():
         notification_manager,
     )
 
-    # Main application window
+    tray_manager = TrayManager(root)
+
     tk.Label(
         root,
         text="Game Time Limiter",
@@ -44,7 +45,7 @@ def main():
         text="Settings",
         font=("Segoe UI", 10),
         width=18,
-        command=lambda: SettingsWindow(root),
+        command=tray_manager.open_settings,
     ).pack(pady=10)
 
     tk.Label(
@@ -54,11 +55,20 @@ def main():
         fg="gray",
     ).pack(pady=5)
 
+    # Closing the window hides the app instead of exiting.
+    root.protocol(
+        "WM_DELETE_WINDOW",
+        tray_manager.hide_window,
+    )
+
     print("Game Time Limiter is running.")
     print(f"Shared daily limit: {LIMIT_SECONDS // 60} minutes.")
     print("Games monitored: CS2 and Rocket League.")
+    print("Close the window to minimize to the system tray.")
+    print("Use the tray menu to exit the application.")
 
-    # Start checking games after one second.
+    # Start the tray icon and timer.
+    tray_manager.start()
     root.after(1000, limiter.check_games)
 
     root.mainloop()
